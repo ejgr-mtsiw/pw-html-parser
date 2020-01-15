@@ -7,6 +7,7 @@ from datetime import datetime
 from time import sleep
 from requests import Session, Request
 import configparser
+from bs4 import BeautifulSoup
 
 
 def login_to_sigrhe(session):
@@ -85,7 +86,6 @@ def get_offer_list(session):
 
     # The response is html and we know the data we need is between the tbody
     # of the table
-
     start_table = response.text.find("<tbody>")
     end_table = response.text.find("</tbody>", start_table)
 
@@ -112,6 +112,60 @@ def get_authentication_data():
     return sigrhe_login, sigrhe_password
 
 
+def parse_html_data(html_data):
+    """Iterates over each tr element in the tree and
+    print the relevant attributes """
+    
+    soup = BeautifulSoup(html_data, "lxml")
+
+    for tr in soup.find_all("tr", class_='grid-row'):
+        contract = get_new_contract(tr)
+        if contract:
+            print(contract)
+
+
+def get_new_contract(tr):
+    """Parses a BeautifulSoup tr element and
+    builds an object with the data we need"""
+
+    contract = None
+
+    try:
+        codigo_escola = tr.find(attrs={"name": "codigo"})["value"]
+        codigo_escola = int(codigo_escola)
+
+        if codigo_escola <= 0:
+            return None
+
+        codigo_oferta_sigrhe = tr['record']
+        num_horario = tr.find(attrs={"name": "num_horario"})["value"]
+        num_horas = tr.find(attrs={"name": "num_horas"})["value"]
+        data_fim_colocacao = tr.find(
+            attrs={"name": "data_fim_colocacao"})["value"]
+        data_final_candidatura = tr.find(
+            attrs={"name": "data_final_candidatura"})["value"]
+
+        grupo_span = tr.find(attrs={"name": "grupo_recrutamento_id"})
+        if grupo_span['value'] == "False":
+            grupo_recrutamento_id = 0
+        else:
+            grupo_recrutamento_id = grupo_span.string[:3]
+
+        contract = {
+            "codigo_escola": codigo_escola,
+            "codigo_oferta_sigrhe": int(codigo_oferta_sigrhe),
+            "num_horario": int(num_horario),
+            "num_horas": int(num_horas),
+            "data_fim_colocacao": data_fim_colocacao,
+            "data_final_candidatura": data_final_candidatura,
+            "grupo_recrutamento_id": int(grupo_recrutamento_id)
+        }
+    except:
+        return None
+
+    return contract
+
+
 with Session() as sigrhe_session:
     # headers
     sigrhe_session.headers = {
@@ -131,7 +185,8 @@ with Session() as sigrhe_session:
     # authenticate on the SIGRHE site
     try:
         login_to_sigrhe(sigrhe_session)
-        get_offer_list(sigrhe_session)
+        html_data = get_offer_list(sigrhe_session)
+        parse_html_data(html_data)
     except Exception as detail:
         # Log this!?
         print("Error: " + detail)
