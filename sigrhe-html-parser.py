@@ -3,190 +3,40 @@
 #
 # (C)Eduardo Ribeiro - 1600820
 
-from datetime import datetime
-from time import sleep
-from requests import Session, Request
-import configparser
-from bs4 import BeautifulSoup
+import sigrhe_parser
+import sigrhe_database
+from sigrhe_contract import Contract
 
+# the session used to communicate with our API
+# api_session = Session()
 
-def login_to_sigrhe(session):
-    """Authenticate on the SIGRHE site"""
+try:
+    sigrhe_session = sigrhe_parser.init_session()
+    contracts = sigrhe_parser.get_contract_list(sigrhe_session)
 
-    now = datetime.now()
-    time = now.strftime("%Y-%m-%dT%H:%M:%S.058Z")
+    db_connection = sigrhe_database.get_database_connection()
+    existing_contract_ids = sigrhe_database.get_all_contracts_ids(
+        db_connection)
 
-    login, password = get_authentication_data()
-
-    payload = {
-        "login_action": "login",
-        "db": "DUMMY",
-        "user": login,
-        "password": password,
-    }
-
-    request = Request(
-        "POST",
-        "https://sigrhe.dgae.mec.pt/?tzoffset=-60&dt=" + time,
-        data=payload,
-    )
-
-    response = session.send(session.prepare_request(request))
-
-    if response.status_code != 200:
-        raise Exception("Login failed!")
-
-    print("We're in!")
-
-    return response
-
-
-def get_offer_list(session):
-    """Get the offer list from the SIGRHE page"""
-
-    # I'm not sure we need all the items in the payload, but the list contains
-    # all items sent in a 'normal' user request
-    payload = {
-        "_terp_search_domain": "None",
-        "_terp_filter_domain": "[]",
-        "_terp_search_data": "",
-        "_terp_notebook_tab": "0",
-        "_terp_string": "Horários",
-        "_terp_model": "dgrhe_ce_12_horario",
-        "_terp_state": "",
-        "_terp_id": "False",
-        "_terp_ids": "",
-        "_terp_view_ids": "[1872, False]",
-        "_terp_view_mode": "[u'tree', u'form']",
-        "_terp_view_type": "tree",
-        "_terp_view_id": "1872",
-        "_terp_domain": "[('flag_bce', '=', 'False'), ('ano_letivo', '=', '2019/2020')]",
-        "_terp_context": "{'lang': u'pt_PT', 'tz': False, 'active_model': 'ir.ui.menu', 'department_id': False, 'disabled_states': ('naocomprovado', 'finalizacao', 'anulado_reg', 'deleted', 'anulado', 'anulado_conc', 'usado_rr', 'usado_bce', 'enviado_bce', 'enviado_ce', 'enviado_rr', 'rejeitado_rr1', 'rejeitado_bce', 'anulado_rr', 'anulado_bce', 'denunciado', 'naoapre', 'naousado_rr', 'naousado_rr1', 'naousado_rr2', 'naousado_bce', 'valido_waiting'), 'disabled_$flag_cand_subm': (True,), 'disabled_$ano_letivo': ('2019/2020', '2016/2017', '2015/2016', '2014/2015', '2013/2014', '2012/2013'), 'client': 'web', 'active_ids': [], 'disable_cache': True, 'active_id': False}",
-        "_terp_editable": "True",
-        "_terp_limit": "-1",
-        "_terp_offset": "0",
-        "_terp_count": "0",
-        "_terp_group_by_ctx": "[]",
-        "_terp_filters_context": "",
-        "_terp_action_id": "2920",
-        "_terp_concurrency_info": "",
-        "_terp_source": "_terp_list",
-        "callback": "jsonp1533584920784",
-    }
-
-    request = Request(
-        "POST", "https://sigrhe.dgae.mec.pt/openerp/listgrid/get",
-        data=payload
-    )
-
-    response = session.send(session.prepare_request(request))
-
-    if response.status_code != 200:
-        raise Exception("Failed getting offer list!")
-
-    # The response is html and we know the data we need is between the tbody
-    # of the table
-    start_table = response.text.find("<tbody>")
-    end_table = response.text.find("</tbody>", start_table)
-
-    html_data = response.text[start_table:end_table]
-    html_data = html_data.replace("\t", "")
-    html_data = html_data.replace("\n", "")
-    html_data = html_data.replace('\\"', '"')
-
-    print(html_data)
-    return html_data
-
-
-def get_authentication_data():
-    """Reads authentication data froim settings.ini file to avoid commiting
-    user credentials """
-
-    config_parser = configparser.RawConfigParser()
-    config_file_path = r'settings.ini'
-    config_parser.read(config_file_path)
-
-    sigrhe_login = config_parser.get('SIGRHE', 'login')
-    sigrhe_password = config_parser.get('SIGRHE', 'password')
-
-    return sigrhe_login, sigrhe_password
-
-
-def parse_html_data(html_data):
-    """Iterates over each tr element in the tree and
-    print the relevant attributes """
-    
-    soup = BeautifulSoup(html_data, "lxml")
-
-    for tr in soup.find_all("tr", class_='grid-row'):
-        contract = get_new_contract(tr)
-        if contract:
-            print(contract)
-
-
-def get_new_contract(tr):
-    """Parses a BeautifulSoup tr element and
-    builds an object with the data we need"""
-
-    contract = None
-
-    try:
-        codigo_escola = tr.find(attrs={"name": "codigo"})["value"]
-        codigo_escola = int(codigo_escola)
-
-        if codigo_escola <= 0:
-            return None
-
-        codigo_oferta_sigrhe = tr['record']
-        num_horario = tr.find(attrs={"name": "num_horario"})["value"]
-        num_horas = tr.find(attrs={"name": "num_horas"})["value"]
-        data_fim_colocacao = tr.find(
-            attrs={"name": "data_fim_colocacao"})["value"]
-        data_final_candidatura = tr.find(
-            attrs={"name": "data_final_candidatura"})["value"]
-
-        grupo_span = tr.find(attrs={"name": "grupo_recrutamento_id"})
-        if grupo_span['value'] == "False":
-            grupo_recrutamento_id = 0
+    for contract in contracts:
+        # check if contract already exists
+        if contract.id in existing_contract_ids:
+            # remove it from the list
+            # TODO: Log this!
+            existing_contract_ids.remove(contract.id)
+            print("Already exists: "+str(contract.id))
         else:
-            grupo_recrutamento_id = grupo_span.string[:3]
+            # if it's new get extra details
+            contract.class_project, contract.qualifications = sigrhe_parser.get_contract_details(
+                sigrhe_session, contract.id)
 
-        contract = {
-            "codigo_escola": codigo_escola,
-            "codigo_oferta_sigrhe": int(codigo_oferta_sigrhe),
-            "num_horario": int(num_horario),
-            "num_horas": int(num_horas),
-            "data_fim_colocacao": data_fim_colocacao,
-            "data_final_candidatura": data_final_candidatura,
-            "grupo_recrutamento_id": int(grupo_recrutamento_id)
-        }
-    except:
-        return None
+            # add it to our system
+            # TODO: Log this!
+            print("Adding: "+str(contract.id))
+            sigrhe_database.add_new_contract(db_connection, contract)
 
-    return contract
+    # TODO: mark the remaining existing_contract_ids as expired
 
-
-with Session() as sigrhe_session:
-    # headers
-    sigrhe_session.headers = {
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "pt-PT,pt;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2",
-        "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:72.0) Gecko/20100101 Firefox/72.0",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "text/javascript, application/javascript, */*",
-        "Referer": "https://sigrhe.dgae.mec.pt/openerp/menu?active=474&tzoffset=-60",
-        "X-Requested-With": "XMLHttpRequest",
-        "Connection": "keep-alive",
-        "DNT": "1",
-        "Host": "sigrhe.dgae.mec.pt",
-        "Origin": "https://sigrhe.dgae.mec.pt",
-    }
-
-    # authenticate on the SIGRHE site
-    try:
-        login_to_sigrhe(sigrhe_session)
-        html_data = get_offer_list(sigrhe_session)
-        parse_html_data(html_data)
-    except Exception as detail:
-        # Log this!?
-        print("Error: " + detail)
+except Exception as detail:
+    # TODO: Log this!
+    print(detail)

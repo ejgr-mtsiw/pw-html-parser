@@ -1,3 +1,9 @@
-[SIGRHE]
+[sigrhe]
+login = login
+password = password
+
+[database]
+host = localhost
+database = database
 login = login
 password = password
