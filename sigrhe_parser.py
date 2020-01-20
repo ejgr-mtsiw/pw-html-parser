@@ -115,9 +115,14 @@ def get_contract_html(session):
     end_table = response.text.find("</tbody>", start_table)
 
     html_data = response.text[start_table:end_table]
-    html_data = html_data.replace("\t", "")
-    html_data = html_data.replace("\n", "")
-    html_data = html_data.replace('\\"', '"')
+
+    # Strip uneeded characters
+    html_data = html_data.replace("\t", "").replace("\n", "").replace("\\t", "").replace(
+        "\\n", "").replace('\\"', '"').replace("\\'", "'").replace('\\\\', '\\')
+
+    # Convert \uxxxx bytes from javacript to utf-8 characters
+    # https://www.webforefront.com/django/pythonbasics-text.html
+    html_data = bytes(html_data, 'utf-8').decode('raw_unicode_escape')
 
     return html_data
 
