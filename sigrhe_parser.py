@@ -181,7 +181,7 @@ def get_new_contract(tr):
 
         group_span = tr.find(attrs={"name": "grupo_recrutamento_id"})
         if group_span['value'] == "False":
-            recruitment_group = ""
+            recruitment_group = "T. E."
         else:
             recruitment_group = group_span.string[:3]
 
