@@ -220,8 +220,6 @@ def get_contract_details(session, id):
     response = session.send(session.prepare_request(request))
 
     if response.status_code != 200:
-        # TODO: Log this!
-        print('Failed getting offer discipline! [' + str(id) + ']')
         return None
 
     try:

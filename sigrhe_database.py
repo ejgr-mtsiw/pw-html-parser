@@ -32,7 +32,7 @@ def get_all_contracts_ids(database):
     """Returns a list of all the contracts ids already in the database"""
 
     cursor = database.cursor()
-    sql = "SELECT id FROM contracts;"
+    sql = "SELECT id FROM contracts WHERE `expired` = 0;"
 
     cursor.execute(sql)
 
@@ -93,10 +93,25 @@ def add_new_contract(database, contract):
         contract.qualifications
     )
 
-    try:
-        cursor.execute(sql, data)
+    cursor.execute(sql, data)
 
-        database.commit()
-    except mysql.connector.Error as error:
-        # TODO: Log this!
-        print(error)
+    database.commit()
+
+def mark_contract_as_expired(database, id):
+    """Marks a contract as expired"""
+
+    cursor = database.cursor()
+
+    sql = '''UPDATE `contracts` SET
+                `expired`=%s
+            WHERE
+                `id`=%s;'''
+
+    data = (
+        "1",
+        id
+    )
+
+    cursor.execute(sql, data)
+
+    database.commit()
