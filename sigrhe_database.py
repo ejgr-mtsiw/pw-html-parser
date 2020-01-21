@@ -5,9 +5,9 @@
 
 from datetime import datetime
 from time import sleep
-import configparser
 from sigrhe_contract import Contract
 import mysql.connector
+from setup_config import config_parser
 from setup_logger import logging
 
 logger = logging.getLogger('db')
@@ -48,10 +48,6 @@ def get_all_contracts_ids(database):
 def get_authentication_data():
     """Reads authentication data from settings.ini file to avoid commiting
     user credentials to github"""
-
-    config_parser = configparser.RawConfigParser()
-    config_file_path = r'settings.ini'
-    config_parser.read(config_file_path)
 
     host = config_parser.get('database', 'host')
     database = config_parser.get('database', 'database')

@@ -6,9 +6,9 @@
 from datetime import datetime
 from time import sleep
 from requests import Session, Request
-import configparser
 from bs4 import BeautifulSoup
 from sigrhe_contract import Contract
+from setup_config import config_parser
 from setup_logger import logging
 
 logger = logging.getLogger('session')
@@ -133,10 +133,6 @@ def get_contract_html(session):
 def get_authentication_data():
     """Reads authentication data from settings.ini file to avoid commiting
     user credentials to github"""
-
-    config_parser = configparser.RawConfigParser()
-    config_file_path = r'settings.ini'
-    config_parser.read(config_file_path)
 
     sigrhe_login = config_parser.get('sigrhe', 'login')
     sigrhe_password = config_parser.get('sigrhe', 'password')
