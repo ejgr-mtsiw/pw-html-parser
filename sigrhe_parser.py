@@ -9,6 +9,9 @@ from requests import Session, Request
 import configparser
 from bs4 import BeautifulSoup
 from sigrhe_contract import Contract
+from setup_logger import logging
+
+logger = logging.getLogger('session')
 
 
 def init_session():
@@ -58,10 +61,10 @@ def login_to_sigrhe(session):
     response = session.send(session.prepare_request(request))
 
     if response.status_code != 200:
-        # TODO: Log this!
+        logger.critical("Login failed to SIGRHE")
         raise Exception("Login failed!")
 
-    print("We're in!")
+    logger.info("Login successful to SIGRHE")
 
     return response
 
@@ -200,7 +203,7 @@ def get_new_contract(tr):
             "")
         return contract
     except:
-        # TODO: Log this!
+        logger.error("Unable to parse %s" % tr)
         return None
 
 
@@ -220,6 +223,7 @@ def get_contract_details(session, id):
     response = session.send(session.prepare_request(request))
 
     if response.status_code != 200:
+        logger.critical("Unable to get details for contract %s" % id)
         return None
 
     try:
@@ -228,6 +232,8 @@ def get_contract_details(session, id):
         qualifications = soup.find(attrs={"id": "curso_habilitacao"})['value']
         return class_project, qualifications
     except:
+        logger.critical(
+            "Unable to parse details for contract %s: %s" % (id, response.text))
         return None
 
 
@@ -235,15 +241,11 @@ def get_contract_list(session):
 
     contracts = []
 
-    try:
-        # authenticate on the SIGRHE site
-        login_to_sigrhe(session)
+    # authenticate on the SIGRHE site
+    login_to_sigrhe(session)
 
-        # get contract data
-        html_data = get_contract_html(session)
-        contracts = parse_html_data(html_data)
-    except Exception as detail:
-        # TODO: Log this!
-        print("Error: " + detail)
+    # get contract data
+    html_data = get_contract_html(session)
+    contracts = parse_html_data(html_data)
 
     return contracts

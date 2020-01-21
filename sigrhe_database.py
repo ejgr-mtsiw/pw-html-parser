@@ -8,7 +8,9 @@ from time import sleep
 import configparser
 from sigrhe_contract import Contract
 import mysql.connector
+from setup_logger import logging
 
+logger = logging.getLogger('db')
 
 def get_database_connection():
     """Returns a valid database connection"""
