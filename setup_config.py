@@ -9,6 +9,6 @@ import os
 config_parser = configparser.RawConfigParser()
 
 dir = os.path.dirname(os.path.abspath(__file__))
-config_file_path = os.path.join(dir, 'settings.ini')
+config_file_path = os.path.join(dir, "settings.ini")
 
 config_parser.read(config_file_path)

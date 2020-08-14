@@ -18,7 +18,21 @@ class Contract:
     class_project = ""
     qualifications = ""
 
-    def __init__(self, id, school_code, school_name, n_contract, n_hours_per_week, contract_end_date, application_deadline, recruitment_group, county, district, class_project, qualifications):
+    def __init__(
+        self,
+        id,
+        school_code,
+        school_name,
+        n_contract,
+        n_hours_per_week,
+        contract_end_date,
+        application_deadline,
+        recruitment_group,
+        county,
+        district,
+        class_project,
+        qualifications,
+    ):
         self.id = id
         self.school_code = school_code
         self.school_name = school_name

@@ -11,7 +11,7 @@ from sigrhe_contract import Contract
 from setup_config import config_parser
 from setup_logger import logging
 
-logger = logging.getLogger('session')
+logger = logging.getLogger("session")
 
 
 def init_session():
@@ -75,35 +75,35 @@ def get_contract_html(session):
     # I'm not sure we need all the items in the payload, but the list contains
     # all items sent in a 'normal' user request
     payload = {
-        "_terp_search_domain": "None",
-        "_terp_filter_domain": "[]",
-        "_terp_search_data": "",
-        "_terp_notebook_tab": "0",
-        "_terp_string": "Horários",
         "_terp_model": "dgrhe_ce_12_horario",
         "_terp_state": "",
         "_terp_id": "False",
-        "_terp_ids": "",
-        "_terp_view_ids": "[1872, False]",
-        "_terp_view_mode": "[u'tree', u'form']",
+        "_terp_view_mode": "[u'tree',u'form']",
         "_terp_view_type": "tree",
-        "_terp_view_id": "1872",
-        "_terp_domain": "[('flag_bce', '=', 'False'), ('ano_letivo', '=', '2019/2020')]",
-        "_terp_context": "{'lang': u'pt_PT', 'tz': False, 'active_model': 'ir.ui.menu', 'department_id': False, 'disabled_states': ('naocomprovado', 'finalizacao', 'anulado_reg', 'deleted', 'anulado', 'anulado_conc', 'usado_rr', 'usado_bce', 'enviado_bce', 'enviado_ce', 'enviado_rr', 'rejeitado_rr1', 'rejeitado_bce', 'anulado_rr', 'anulado_bce', 'denunciado', 'naoapre', 'naousado_rr', 'naousado_rr1', 'naousado_rr2', 'naousado_bce', 'valido_waiting'), 'disabled_$flag_cand_subm': (True,), 'disabled_$ano_letivo': ('2019/2020', '2016/2017', '2015/2016', '2014/2015', '2013/2014', '2012/2013'), 'client': 'web', 'active_ids': [], 'disable_cache': True, 'active_id': False}",
+        "_terp_view_id": "6676",
+        "_terp_domain": "[('flag_bce','=','False'),('ano_letivo','=','2020/2021')]",
         "_terp_editable": "True",
         "_terp_limit": "-1",
         "_terp_offset": "0",
         "_terp_count": "0",
         "_terp_group_by_ctx": "[]",
         "_terp_filters_context": "",
-        "_terp_action_id": "2920",
-        "_terp_concurrency_info": "",
+        "_terp_action_id": "5455",
+        "_terp_concurrency_info": "('dgrhe_ce_12_horario,297739','2020-08-07+15:37:35.010367')",
+        "_terp_view_params/_terp_model": "dgrhe_ce_12_habilitacao",
+        "_terp_view_params/_terp_id": "390841",
+        "_terp_view_params/_terp_ids": "[390841]",
+        "_terp_view_params/_terp_view_ids": "[False,False]",
+        "_terp_view_params/_terp_view_mode": "[u'tree',u'form']",
+        "_terp_parent_model": "dgrhe_ce_12_habilitacao",
+        "_terp_parent_id": "390841",
+        "_terp_parent_view_id": "8133",
         "_terp_source": "_terp_list",
-        "callback": "jsonp1533584920784",
     }
 
     request = Request(
-        "POST", "https://sigrhe.dgae.mec.pt/openerp/listgrid/get",
+        "POST",
+        "https://sigrhe.dgae.mec.pt/openerp/listgrid/get",
         data=payload
     )
 
@@ -120,12 +120,19 @@ def get_contract_html(session):
     html_data = response.text[start_table:end_table]
 
     # Strip uneeded characters
-    html_data = html_data.replace("\t", "").replace("\n", "").replace("\\t", "").replace(
-        "\\n", "").replace('\\"', '"').replace("\\'", "'").replace('\\\\', '\\')
+    html_data = (
+        html_data.replace("\t", "")
+        .replace("\n", "")
+        .replace("\\t", "")
+        .replace("\\n", "")
+        .replace('\\"', '"')
+        .replace("\\'", "'")
+        .replace("\\\\", "\\")
+    )
 
     # Convert \uxxxx bytes from javacript to utf-8 characters
     # https://www.webforefront.com/django/pythonbasics-text.html
-    html_data = bytes(html_data, 'utf-8').decode('raw_unicode_escape')
+    html_data = bytes(html_data, "utf-8").decode("raw_unicode_escape")
 
     return html_data
 
@@ -134,8 +141,8 @@ def get_authentication_data():
     """Reads authentication data from settings.ini file to avoid commiting
     user credentials to github"""
 
-    sigrhe_login = config_parser.get('sigrhe', 'login')
-    sigrhe_password = config_parser.get('sigrhe', 'password')
+    sigrhe_login = config_parser.get("sigrhe", "login")
+    sigrhe_password = config_parser.get("sigrhe", "password")
 
     return sigrhe_login, sigrhe_password
 
@@ -148,7 +155,7 @@ def parse_html_data(html_data):
 
     soup = BeautifulSoup(html_data, "lxml")
 
-    for tr in soup.find_all("tr", class_='grid-row'):
+    for tr in soup.find_all("tr", class_="grid-row"):
         contract = get_new_contract(tr)
         if contract:
             contracts.append(contract)
@@ -163,23 +170,23 @@ def get_new_contract(tr):
     contract = None
 
     try:
-        id = int(tr['record'])
-        if (id <= 0):
+        id = int(tr["record"])
+        if id <= 0:
             return None
 
         school_code = tr.find(attrs={"name": "codigo"})["value"]
         school_name = tr.find(attrs={"name": "entidade_id"}).string
         n_contract = tr.find(attrs={"name": "num_horario"})["value"]
         n_hours_per_week = tr.find(attrs={"name": "num_horas"})["value"]
-        contract_end_date = tr.find(
-            attrs={"name": "data_fim_colocacao"})["value"]
-        application_deadline = tr.find(
-            attrs={"name": "data_final_candidatura"})["value"]
+        contract_end_date = tr.find(attrs={"name": "data_fim_colocacao"})["value"]
+        application_deadline = tr.find(attrs={"name": "data_final_candidatura"})[
+            "value"
+        ]
         county = tr.find(attrs={"name": "concelho"})["value"]
         district = tr.find(attrs={"name": "distrito"})["value"]
 
         group_span = tr.find(attrs={"name": "grupo_recrutamento_id"})
-        if group_span['value'] == "False":
+        if group_span["value"] == "False":
             recruitment_group = "T. E."
         else:
             recruitment_group = group_span.string[:3]
@@ -196,7 +203,8 @@ def get_new_contract(tr):
             str(county),
             str(district),
             "",
-            "")
+            "",
+        )
         return contract
     except:
         logger.error("Unable to parse %s" % tr)
@@ -206,15 +214,17 @@ def get_new_contract(tr):
 def get_contract_details(session, id):
     """ Get the extra details for a contract"""
 
-    payload = {"model": "dgrhe_ce_12_horario",
-               "id": id,
-               "domain": "[('flag_bce', '=', 'False'), ('ano_letivo', '=', '2019/2020')]"
-               }
+    payload = {
+        "model": "dgrhe_ce_12_horario",
+        "id": id,
+        "domain": "[('flag_bce', '=', 'False'), ('ano_letivo', '=', '2020/2021')]",
+    }
 
-    request = Request('GET',
-                      "https://sigrhe.dgae.mec.pt/openerp/form/view",
-                      params=payload
-                      )
+    request = Request(
+        "GET",
+        "https://sigrhe.dgae.mec.pt/openerp/form/view",
+        params=payload
+    )
 
     response = session.send(session.prepare_request(request))
 
@@ -224,12 +234,13 @@ def get_contract_details(session, id):
 
     try:
         soup = BeautifulSoup(response.text, "lxml")
-        class_project = soup.find(attrs={"id": "disciplina_projeto"})['value']
-        qualifications = soup.find(attrs={"id": "curso_habilitacao"})['value']
+        class_project = soup.find(attrs={"id": "disciplina_projeto"})["value"]
+        qualifications = soup.find(attrs={"id": "curso_habilitacao"})["value"]
         return class_project, qualifications
     except:
         logger.critical(
-            "Unable to parse details for contract %s: %s" % (id, response.text))
+            "Unable to parse details for contract %s: %s" % (id, response.text)
+        )
         return None
 
 
