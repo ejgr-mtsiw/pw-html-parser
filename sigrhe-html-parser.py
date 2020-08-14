@@ -15,9 +15,8 @@ try:
     logger.info("Found %s contracts" % len(contracts))
 
     db_connection = sigrhe_database.get_database_connection()
-    existing_contract_ids = sigrhe_database.get_all_contracts_ids(
-        db_connection)
-    
+    existing_contract_ids = sigrhe_database.get_all_contracts_ids(db_connection)
+
     for contract in contracts:
         # check if contract already exists
         if contract.id in existing_contract_ids:
@@ -25,12 +24,15 @@ try:
             existing_contract_ids.remove(contract.id)
         else:
             # if it's new get extra details
-            contract.class_project, contract.qualifications = sigrhe_parser.get_contract_details(
-                sigrhe_session, contract.id)
+            (
+                contract.class_project,
+                contract.qualifications,
+            ) = sigrhe_parser.get_contract_details(sigrhe_session, contract.id)
 
             if contract.class_project == None:
                 logger.critical(
-                    "Could not retrieve details for contract %s" % contract.id)
+                    "Could not retrieve details for contract %s" % contract.id
+                )
             else:
                 # add it to our system
                 sigrhe_database.add_new_contract(db_connection, contract)
