@@ -128,11 +128,29 @@ def get_contract_html(session):
         .replace('\\"', '"')
         .replace("\\'", "'")
         .replace("\\\\", "\\")
+        .replace("\\xc0", "À")
+        .replace("\\xc1", "Á")
+        .replace("\\xe1", "á")
+        .replace("\\xe3", "ã")
+        .replace("\\xe2", "â")
+        .replace("\\xc9", "É")
+        .replace("\\xe9", "é")
+        .replace("\\xea", "ê")
+        .replace("\\xcd", "Í")
+        .replace("\\xed", "í")
+        .replace("\\xd3", "Ó")
+        .replace("\\xf3", "ó")
+        .replace("\\xf5", "õ")
+        .replace("\\xfa", "ú")
+        .replace("\\xe7", "ç")
+        .replace("\\xb4", "'")
+        .replace("\\xaa", "ª")
+        .replace("\\xba", "º")
     )
 
     # Convert \uxxxx bytes from javacript to utf-8 characters
     # https://www.webforefront.com/django/pythonbasics-text.html
-    html_data = bytes(html_data, "utf-8").decode("raw_unicode_escape")
+    #html_data = bytes(html_data, "utf-8").decode("raw_unicode_escape")
 
     return html_data
 
@@ -174,14 +192,12 @@ def get_new_contract(tr):
         if id <= 0:
             return None
 
-        school_code = tr.find(attrs={"name": "codigo"})["value"]
+        #school_code = tr.find(attrs={"name": "codigo"})["value"]
         school_name = tr.find(attrs={"name": "entidade_id"}).string
         n_contract = tr.find(attrs={"name": "num_horario"})["value"]
         n_hours_per_week = tr.find(attrs={"name": "num_horas"})["value"]
         contract_end_date = tr.find(attrs={"name": "data_fim_colocacao"})["value"]
-        application_deadline = tr.find(attrs={"name": "data_final_candidatura"})[
-            "value"
-        ]
+        application_deadline = tr.find(attrs={"name": "data_final_candidatura"})["value"]
         county = tr.find(attrs={"name": "concelho"})["value"]
         district = tr.find(attrs={"name": "distrito"})["value"]
 
@@ -193,7 +209,7 @@ def get_new_contract(tr):
 
         contract = Contract(
             id,
-            int(school_code),
+            0,
             str(school_name),
             int(n_contract),
             int(n_hours_per_week),
@@ -234,9 +250,11 @@ def get_contract_details(session, id):
 
     try:
         soup = BeautifulSoup(response.text, "lxml")
+
+        school_code = soup.find(attrs={"id": "codigo"})["value"]
         class_project = soup.find(attrs={"id": "disciplina_projeto"})["value"]
         qualifications = soup.find(attrs={"id": "curso_habilitacao"})["value"]
-        return class_project, qualifications
+        return school_code, class_project, qualifications
     except:
         logger.critical(
             "Unable to parse details for contract %s: %s" % (id, response.text)

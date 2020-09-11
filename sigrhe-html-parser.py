@@ -25,6 +25,7 @@ try:
         else:
             # if it's new get extra details
             (
+                contract.school_code,
                 contract.class_project,
                 contract.qualifications,
             ) = sigrhe_parser.get_contract_details(sigrhe_session, contract.id)
