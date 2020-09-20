@@ -24,20 +24,25 @@ try:
             existing_contract_ids.remove(contract.id)
         else:
             # if it's new get extra details
-            (
-                contract.school_code,
-                contract.class_project,
-                contract.qualifications,
-            ) = sigrhe_parser.get_contract_details(sigrhe_session, contract.id)
+            try:
+                (
+                    contract.school_code,
+                    contract.class_project,
+                    contract.qualifications,
+                ) = sigrhe_parser.get_contract_details(sigrhe_session, contract.id)
 
-            if contract.class_project == None:
-                logger.critical(
-                    "Could not retrieve details for contract %s" % contract.id
-                )
-            else:
-                # add it to our system
-                sigrhe_database.add_new_contract(db_connection, contract)
-                logger.info("Adding: %s" % contract.id)
+                if contract.class_project == None:
+                    logger.critical(
+                        "Could not retrieve details for contract %s" % contract.id
+                    )
+                else:
+                    # add it to our system
+                    sigrhe_database.add_new_contract(db_connection, contract)
+                    logger.info("Adding: %s" % contract.id)
+
+            except Exception as detail:
+                logger.critical(str(contract.id))
+                logger.critical(str(detail))
 
             # let's sleep between requests to avoid being flagged as DOS attack
             sleep(5)
